@@ -11,7 +11,7 @@ import json                   # сохранение прогресса
 import os                     # работа с файлами/папками
 
 ed.init()                                                    # инициализация pygame
-WIDTH, HEIGHT = 1820, 800                                    # размеры окна
+WIDTH, HEIGHT = 1520, 800                                    # размеры окна
 screen = ed.display.set_mode((WIDTH, HEIGHT), ed.FULLSCREEN) # полноэкранный режим
 ed.display.set_caption("огризок")                            # заголовок окна
 
