@@ -1,8 +1,8 @@
 {
   "p1": {
-    "score": 11,
-    "power": 1,
-    "auto": 0,
+    "score": 1365,
+    "power": 16,
+    "auto": 9,
     "mult": 1.0,
     "crit": 0.0,
     "crit_mult": 5.0,
@@ -12,7 +12,7 @@
     "mega_mult": 1.0,
     "levels": [
       0,
-      0,
+      4,
       0,
       0,
       0,
@@ -51,7 +51,7 @@
     ],
     "costs": [
       10,
-      50,
+      414,
       200,
       100,
       300,
@@ -88,10 +88,10 @@
       300000,
       500000
     ],
-    "max_score": 11,
-    "max_combo": 11,
+    "max_score": 1357,
+    "max_combo": 16,
     "golden_caught": 0,
-    "total_clicks": 11,
+    "total_clicks": 46,
     "combo_value": 0.0,
     "combo_max": 1.5,
     "boom_every": 0,
@@ -129,9 +129,9 @@
     "overdrive": 0.0
   },
   "p2": {
-    "score": 0,
-    "power": 1,
-    "auto": 0,
+    "score": 556,
+    "power": 16,
+    "auto": 5,
     "mult": 1.0,
     "crit": 0.0,
     "crit_mult": 5.0,
@@ -217,10 +217,10 @@
       300000,
       500000
     ],
-    "max_score": 0,
-    "max_combo": 0,
+    "max_score": 556,
+    "max_combo": 8,
     "golden_caught": 0,
-    "total_clicks": 0,
+    "total_clicks": 12,
     "combo_value": 0.0,
     "combo_max": 1.5,
     "boom_every": 0,
@@ -257,7 +257,14 @@
     "wisdom": 1.0,
     "overdrive": 0.0
   },
-  "achievements": [
-    "rich_1k"
-  ]
+  "achievements_p1": [
+    "rich_1k",
+    "first_step"
+  ],
+  "achievements_p2": [],
+  "playlist": [
+    "music\\muzika.mp3"
+  ],
+  "current_track": 0,
+  "music_volume": 0.7
 }
