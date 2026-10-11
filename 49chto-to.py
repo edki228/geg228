@@ -1,5 +1,5 @@
 # ============================================================
-# ДВУХИГРОВОЙ КЛИКЕР — ФИНАЛЬНАЯ ВЕРСИЯ + ОНЛАЙН (Radmin VPN)
+# ДВУХИГРОВОЙ КЛИКЕР — ФИНАЛЬНАЯ ВЕРСИЯ
 # Музыкальная панель показывается ТОЛЬКО в меню и настройке соревнования
 # В игре музыка скрыта (но управление работает через клавиши M/N/P/+/-)
 # ============================================================
@@ -9,13 +9,9 @@ import sys                    # системные функции (выход)
 import random                 # случайные числа (криты, события)
 import json                   # сохранение прогресса
 import os                     # работа с файлами/папками
-import socket                 # <-- сеть
-import threading              # <-- сеть
-import queue                  # <-- сеть
-import time as _time          # <-- сеть
 
 ed.init()                                                    # инициализация pygame
-WIDTH, HEIGHT = 1520, 800                                    # размеры окна
+WIDTH, HEIGHT = 1820, 800                                    # размеры окна
 screen = ed.display.set_mode((WIDTH, HEIGHT), ed.FULLSCREEN) # полноэкранный режим
 ed.display.set_caption("огризок")                            # заголовок окна
 
@@ -40,35 +36,40 @@ music_volume = 0.7                     # громкость 0..1
 music_paused = False                   # на паузе ли
 
 def scan_music():
+    """Сканирует папку music/ на наличие аудиофайлов"""
     global playlist
     found = []
-    if os.path.isdir(MUSIC_DIR):
-        for f in sorted(os.listdir(MUSIC_DIR)):
-            if f.lower().endswith((".mp3", ".ogg", ".wav")):
-                found.append(os.path.join(MUSIC_DIR, f))
-    if not found and os.path.exists("muzika.mp3"):
+    if os.path.isdir(MUSIC_DIR):                                        # если папка есть
+        for f in sorted(os.listdir(MUSIC_DIR)):                          # перебираем файлы
+            if f.lower().endswith((".mp3", ".ogg", ".wav")):             # только аудио
+                found.append(os.path.join(MUSIC_DIR, f))                 # полный путь
+    if not found and os.path.exists("muzika.mp3"):                       # fallback
         found.append("muzika.mp3")
     playlist = found
     print(f"🎵 Найдено треков: {len(playlist)}")
 
 def play_track(idx):
+    """Включает трек по индексу (по кругу)"""
     global current_track
     if not playlist: return
     current_track = idx % len(playlist)
     try:
         ed.mixer.music.load(playlist[current_track])
         ed.mixer.music.set_volume(music_volume)
-        ed.mixer.music.play(-1)
+        ed.mixer.music.play(-1)                                          # зацикливание
     except Exception as e:
         print("Ошибка музыки:", e)
 
 def next_track():
+    """Следующий трек"""
     if playlist: play_track(current_track + 1)
 
 def prev_track():
+    """Предыдущий трек"""
     if playlist: play_track(current_track - 1)
 
 def toggle_pause():
+    """Пауза / продолжить"""
     global music_paused
     if not playlist: return
     if music_paused:
@@ -77,11 +78,13 @@ def toggle_pause():
         ed.mixer.music.pause(); music_paused = True
 
 def change_volume(delta):
+    """Изменение громкости на delta"""
     global music_volume
     music_volume = max(0.0, min(1.0, music_volume + delta))
     ed.mixer.music.set_volume(music_volume)
 
 def get_track_name():
+    """Возвращает имя текущего трека"""
     if not playlist: return "— нет музыки —"
     return os.path.basename(playlist[current_track])
 
@@ -101,10 +104,10 @@ except FileNotFoundError:
 button_img2 = ed.Surface((260, 260), ed.SRCALPHA)
 ed.draw.circle(button_img2, (255, 130, 130), (130, 130), 130)
 
-PLAYER1_X = WIDTH // 4
-PLAYER2_X = WIDTH * 3 // 4
-button1_rect = button_img.get_rect(center=(PLAYER1_X, 320))
-button2_rect = button_img2.get_rect(center=(PLAYER2_X, 320))
+PLAYER1_X = WIDTH // 4                                       # X центра 1-го игрока
+PLAYER2_X = WIDTH * 3 // 4                                   # X центра 2-го игрока
+button1_rect = button_img.get_rect(center=(PLAYER1_X, 320))  # прямоугольник кнопки 1
+button2_rect = button_img2.get_rect(center=(PLAYER2_X, 320)) # прямоугольник кнопки 2
 
 # ============================================================
 # УЛУЧШЕНИЯ
@@ -153,10 +156,11 @@ UPGRADES_EXTRA = [
 ]
 
 UPGRADES = UPGRADES_BASE + UPGRADES_EXTRA
-NUM_UPGRADES = len(UPGRADES)
-BASE_COUNT = len(UPGRADES_BASE)
+NUM_UPGRADES = len(UPGRADES)                # всего 37
+BASE_COUNT = len(UPGRADES_BASE)             # базовых 8
 
 def get_active_count():
+    """Сколько улучшений доступно в текущем режиме"""
     return NUM_UPGRADES if state == "free" else BASE_COUNT
 
 # ============================================================
@@ -192,11 +196,11 @@ ACHIEVEMENTS = [
 ]
 TOTAL_ACH = len(ACHIEVEMENTS)
 
-unlocked_achievements = set()
-achievement_banner = ""
-achievement_banner_timer = 0.0
-achievement_banner_player = 0
-show_achievements = False
+unlocked_achievements = set()                  # id всех открытых
+achievement_banner = ""                        # текст баннера
+achievement_banner_timer = 0.0                 # сколько показывать
+achievement_banner_player = 0                  # кто получил
+show_achievements = False                      # открыт ли список
 
 # ============================================================
 # СОЗДАНИЕ ИГРОКА
@@ -279,66 +283,65 @@ def reset_game():
 # ============================================================
 # ЦВЕТА
 # ============================================================
-COLOR_P1 = (110, 193, 255)
-COLOR_P2 = (255, 130, 130)
-COLOR_BG = (30, 30, 47)
-COLOR_GOLD = (255, 215, 0)
-COLOR_GRAY = (150, 150, 150)
-COLOR_RED = (255, 70, 70)
-COLOR_GREEN = (100, 255, 150)
-COLOR_PANEL_BG = (22, 22, 36)
-COLOR_BTN_BG = (42, 42, 66)
-COLOR_BTN_BG_OK = (55, 75, 110)
-COLOR_BTN_BG_OK2 = (110, 60, 60)
-COLOR_EXTRA = (200, 150, 255)
-COLOR_MAX = (255, 200, 60)
-COLOR_NET = (200, 150, 255)
+COLOR_P1 = (110, 193, 255)              # синий (1-й игрок)
+COLOR_P2 = (255, 130, 130)              # красный (2-й игрок)
+COLOR_BG = (30, 30, 47)                 # тёмный фон
+COLOR_GOLD = (255, 215, 0)              # золотой
+COLOR_GRAY = (150, 150, 150)            # серый
+COLOR_RED = (255, 70, 70)               # красный
+COLOR_GREEN = (100, 255, 150)           # зелёный
+COLOR_PANEL_BG = (22, 22, 36)           # фон панели магазина
+COLOR_BTN_BG = (42, 42, 66)             # фон недоступной кнопки
+COLOR_BTN_BG_OK = (55, 75, 110)         # фон доступной кнопки 1
+COLOR_BTN_BG_OK2 = (110, 60, 60)        # фон доступной кнопки 2
+COLOR_EXTRA = (200, 150, 255)           # сиреневый (уникальные)
+COLOR_MAX = (255, 200, 60)              # золотистый (MAX)
 
 # ============================================================
 # ГЛОБАЛЬНЫЕ ПЕРЕМЕННЫЕ
 # ============================================================
-state = "menu"
-prev_state = "free"
-popups = []
+state = "menu"                          # текущий экран
+prev_state = "free"                     # предыдущий режим
+popups = []                             # всплывашки "+N"
 
-EVENT_INTERVAL = 20.0
-AUTOSAVE_INTERVAL = 30.0
-event_timer = EVENT_INTERVAL
-autosave_timer = AUTOSAVE_INTERVAL
+EVENT_INTERVAL = 20.0                   # интервал событий
+AUTOSAVE_INTERVAL = 30.0                # интервал автосейва
+event_timer = EVENT_INTERVAL            # таймер события
+autosave_timer = AUTOSAVE_INTERVAL      # таймер автосейва
 
-double_time = 0.0
-mega_click_time = 0.0
-freeze_time = 0.0
-auto_boom_time = 0.0
-auto_mega_time = 0.0
-temp_crit_time = 0.0
-temp_power_time = 0.0
-shield_active = False
+double_time = 0.0                       # x2 к клику
+mega_click_time = 0.0                   # x5 к клику
+freeze_time = 0.0                       # заморозка
+auto_boom_time = 0.0                    # x3 к авто
+auto_mega_time = 0.0                    # x10 к авто
+temp_crit_time = 0.0                    # +10% крит
+temp_power_time = 0.0                   # +5 силы
+shield_active = False                   # активен ли щит
 
-event_message = ""
-event_message_timer = 0.0
+event_message = ""                      # текст события
+event_message_timer = 0.0               # его таймер
 
-comp_target = 5000
-RACE_DURATION = 60.0
-race_timer = RACE_DURATION
-winner = None
-winner_message = ""
+comp_target = 5000                      # цель соревнования
+RACE_DURATION = 60.0                    # длительность гонки
+race_timer = RACE_DURATION              # таймер гонки
+winner = None                           # победитель
+winner_message = ""                     # текст победы
 
-shop_open_p1 = False
-shop_open_p2 = False
-shop_anim_p1 = 0.0
-shop_anim_p2 = 0.0
-shop_scroll_p1 = 0
-shop_scroll_p2 = 0
-PANEL_W = 420
-SHOP_ITEM_H = 72
-SHOP_VIEW_TOP = 175
-SHOP_VIEW_BOTTOM = HEIGHT - 20
+shop_open_p1 = False                    # магазин 1 открыт?
+shop_open_p2 = False                    # магазин 2 открыт?
+shop_anim_p1 = 0.0                      # анимация панели 1
+shop_anim_p2 = 0.0                      # анимация панели 2
+shop_scroll_p1 = 0                      # прокрутка магазина 1
+shop_scroll_p2 = 0                      # прокрутка магазина 2
+PANEL_W = 420                           # ширина панели
+SHOP_ITEM_H = 72                        # высота строки
+SHOP_VIEW_TOP = 175                     # верх списка
+SHOP_VIEW_BOTTOM = HEIGHT - 20          # низ списка
 
-confirm_reset = False
+confirm_reset = False                   # открыто окно сброса?
 
-SHOP_BTN_P1 = ed.Rect(PLAYER1_X - 110, 600, 220, 55)
-SHOP_BTN_P2 = ed.Rect(PLAYER2_X - 110, 600, 220, 55)
+SHOP_BTN_P1 = ed.Rect(PLAYER1_X - 110, 600, 220, 55)   # кнопка магазина 1
+SHOP_BTN_P2 = ed.Rect(PLAYER2_X - 110, 600, 220, 55)   # кнопка магазина 2
 
 def get_max_scroll():
     visible = SHOP_VIEW_BOTTOM - SHOP_VIEW_TOP
@@ -363,10 +366,8 @@ def reset_effects():
     popups = []
 
 def start_match(mode):
-    global state, p1, p2, winner, winner_message, net_is_online
+    global state, p1, p2, winner, winner_message
     global shop_open_p1, shop_open_p2, shop_anim_p1, shop_anim_p2
-    if mode != "online":
-        net_is_online = False
     p1 = make_player(); p2 = make_player()
     reset_effects()
     winner = None; winner_message = ""
@@ -378,13 +379,9 @@ load_game()
 
 def check_achievements():
     global achievement_banner, achievement_banner_timer, achievement_banner_player
-    if net_is_online:
-        players = [(net_my_num, p1 if net_my_num == 1 else p2)]
-    else:
-        players = [(1, p1), (2, p2)]
     for ach in ACHIEVEMENTS:
         if ach["id"] in unlocked_achievements: continue
-        for pnum, p in players:
+        for pnum, p in ((1, p1), (2, p2)):
             try:
                 if ach["check"](p):
                     unlocked_achievements.add(ach["id"])
@@ -692,190 +689,18 @@ def trigger_event():
     event_message_timer = 3.5
 
 # ============================================================
-# СЕТЕВАЯ ИГРА (Radmin VPN / LAN)
-# ============================================================
-NET_PORT_DEFAULT = 5050
-net_socket = None
-net_role = None
-net_connected = False
-net_recv_q = queue.Queue()
-net_opponent_state = {}
-net_status_msg = ""
-net_is_online = False
-net_my_num = 1
-net_last_send = 0.0
-NET_SEND_INTERVAL = 1.0 / 30.0
-
-net_ip_input = ""
-net_input_active = False
-
-def net_reset():
-    global net_socket, net_role, net_connected, net_opponent_state
-    global net_status_msg, net_is_online, net_my_num
-    net_connected = False
-    if net_socket:
-        try: net_socket.close()
-        except Exception: pass
-    net_socket = None
-    net_role = None
-    net_opponent_state = {}
-    net_status_msg = ""
-    net_is_online = False
-    net_my_num = 1
-    while not net_recv_q.empty():
-        try: net_recv_q.get_nowait()
-        except Exception: break
-
-def net_recv_loop():
-    global net_connected
-    buf = b""
-    try:
-        while net_connected and net_socket is not None:
-            try:
-                data = net_socket.recv(8192)
-            except Exception:
-                break
-            if not data:
-                break
-            buf += data
-            while b"\n" in buf:
-                line, buf = buf.split(b"\n", 1)
-                try:
-                    msg = json.loads(line.decode("utf-8"))
-                    net_recv_q.put(msg)
-                except Exception:
-                    pass
-    except Exception as e:
-        print("net_recv error:", e)
-    net_connected = False
-
-def net_send(msg):
-    if not net_connected or net_socket is None:
-        return
-    try:
-        data = (json.dumps(msg) + "\n").encode("utf-8")
-        net_socket.sendall(data)
-    except Exception as e:
-        print("net_send error:", e)
-
-def net_host(port=NET_PORT_DEFAULT):
-    global net_socket, net_role, net_status_msg
-    net_reset()
-    try:
-        s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-        s.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
-        s.bind(("0.0.0.0", port))
-        s.listen(1)
-        s.settimeout(1.0)
-        net_socket = s
-        net_role = "host"
-        net_status_msg = f"Ожидание клиента на порту {port}..."
-
-        def accept_loop():
-            global net_socket, net_connected, net_status_msg, net_my_num
-            while net_role == "host" and not net_connected:
-                try:
-                    conn, addr = s.accept()
-                except socket.timeout:
-                    continue
-                except Exception:
-                    break
-                net_socket = conn
-                net_connected = True
-                net_my_num = 1
-                net_status_msg = f"Подключён: {addr[0]}"
-                break
-            if net_connected:
-                net_recv_loop()
-
-        threading.Thread(target=accept_loop, daemon=True).start()
-        return True
-    except Exception as e:
-        net_status_msg = f"Ошибка хоста: {e}"
-        return False
-
-def net_join(host_ip, port=NET_PORT_DEFAULT):
-    global net_socket, net_role, net_status_msg, net_connected, net_my_num
-    net_reset()
-    try:
-        s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-        s.settimeout(5.0)
-        s.connect((host_ip, port))
-        s.settimeout(None)
-        net_socket = s
-        net_role = "client"
-        net_connected = True
-        net_my_num = 2
-        net_status_msg = f"Подключено к {host_ip}:{port}"
-        threading.Thread(target=net_recv_loop, daemon=True).start()
-        return True
-    except Exception as e:
-        net_status_msg = f"Ошибка подключения: {e}"
-        return False
-
-def net_state_dict(p):
-    keys = ["score", "power", "auto", "mult", "crit", "crit_mult",
-            "auto_mult", "golden_chance", "golden_mult", "mega_mult",
-            "levels", "costs"]
-    return {k: p[k] for k in keys if k in p}
-
-def net_pump():
-    global net_opponent_state, net_connected, net_status_msg
-    while not net_recv_q.empty():
-        try:
-            msg = net_recv_q.get_nowait()
-        except queue.Empty:
-            break
-        t = msg.get("type")
-        if t == "state":
-            net_opponent_state = msg.get("data", {})
-        elif t == "bye":
-            net_connected = False
-            net_status_msg = "Противник отключился"
-
-    if not net_opponent_state:
-        return
-    opp = p2 if net_my_num == 1 else p1
-    d = net_opponent_state
-    for k in ("score", "power", "auto", "mult", "crit", "crit_mult",
-              "auto_mult", "golden_chance", "golden_mult", "mega_mult"):
-        if k in d:
-            try: opp[k] = d[k]
-            except Exception: pass
-    if "levels" in d:
-        for i, v in enumerate(d["levels"]):
-            if i < len(opp["levels"]):
-                opp["levels"][i] = v
-    if "costs" in d:
-        for i, v in enumerate(d["costs"]):
-            if i < len(opp["costs"]):
-                opp["costs"][i] = v
-
-def net_send_local_state():
-    global net_last_send
-    now = _time.time()
-    if now - net_last_send < NET_SEND_INTERVAL:
-        return
-    net_last_send = now
-    local = p1 if net_my_num == 1 else p2
-    net_send({"type": "state", "data": net_state_dict(local)})
-
-# ============================================================
 # МЕНЮ
 # ============================================================
 MENU_BUTTONS = [
     {"state": "free", "label": "СВОБОДНЫЙ РЕЖИМ",
      "sub": "Сохранения · события · 8 + 29 уникальных прокачек",
-     "color": COLOR_P1, "rect": ed.Rect(WIDTH//2 - 400, 190, 800, 100)},
+     "color": COLOR_P1, "rect": ed.Rect(WIDTH//2 - 400, 220, 800, 110)},
     {"state": "comp_setup", "label": "СОРЕВНОВАНИЕ",
      "sub": "Первый, кто наберёт заданную цель",
-     "color": COLOR_GOLD, "rect": ed.Rect(WIDTH//2 - 400, 300, 800, 100)},
+     "color": COLOR_GOLD, "rect": ed.Rect(WIDTH//2 - 400, 350, 800, 110)},
     {"state": "race", "label": "ГОНКА 60 СЕКУНД",
      "sub": "Кто больше наберёт за минуту",
-     "color": COLOR_GREEN, "rect": ed.Rect(WIDTH//2 - 400, 410, 800, 100)},
-    {"state": "online_setup", "label": "СЕТЕВАЯ ИГРА (Radmin VPN)",
-     "sub": "Хост или подключение к другу по Radmin VPN",
-     "color": COLOR_NET, "rect": ed.Rect(WIDTH//2 - 400, 520, 800, 100)},
+     "color": COLOR_GREEN, "rect": ed.Rect(WIDTH//2 - 400, 480, 800, 110)},
 ]
 
 COMP_PRESETS = [1000, 5000, 10000, 50000]
@@ -884,6 +709,7 @@ for i, amount in enumerate(COMP_PRESETS):
     r = ed.Rect(WIDTH//2 - 800 + i * 410, 340, 380, 160)
     COMP_PRESET_RECTS.append((r, amount))
 
+# --- Кнопки музыкальной панели ---
 MUSIC_BTN_PREV     = ed.Rect(0, 0, 0, 0)
 MUSIC_BTN_PAUSE    = ed.Rect(0, 0, 0, 0)
 MUSIC_BTN_NEXT     = ed.Rect(0, 0, 0, 0)
@@ -1079,6 +905,7 @@ def draw_achievements_panel():
     screen.blit(hint, hint.get_rect(center=(WIDTH // 2, HEIGHT - 30)))
 
 def draw_music_panel():
+    """Панель управления музыкой (только в меню)"""
     global MUSIC_BTN_PREV, MUSIC_BTN_PAUSE, MUSIC_BTN_NEXT, MUSIC_BTN_VOL_UP, MUSIC_BTN_VOL_DOWN
     panel_w, panel_h = 420, 130
     px, py = 15, HEIGHT - panel_h - 15
@@ -1106,63 +933,6 @@ def draw_music_panel():
     vol_t = font_mini.render(f"Громкость: {int(music_volume*100)}%", True, (200, 200, 220))
     screen.blit(vol_t, (px + 12, py + 105))
 
-def draw_online_setup():
-    title = font_huge.render("СЕТЕВАЯ ИГРА", True, COLOR_NET)
-    screen.blit(title, title.get_rect(center=(WIDTH // 2, 70)))
-    sub = font_mid.render("Подключитесь к одной сети Radmin VPN и играйте",
-                          True, (200, 200, 220))
-    screen.blit(sub, sub.get_rect(center=(WIDTH // 2, 140)))
-
-    host_btn = ed.Rect(WIDTH // 2 - 400, 200, 800, 90)
-    hover = host_btn.collidepoint(mouse_pos)
-    ed.draw.rect(screen, (60, 45, 80) if hover else (40, 30, 60),
-                 host_btn, border_radius=16)
-    ed.draw.rect(screen, COLOR_NET, host_btn, 3, border_radius=16)
-    t = font_big.render("🏠 СОЗДАТЬ ИГРУ (ХОСТ)", True, COLOR_NET)
-    screen.blit(t, t.get_rect(center=host_btn.center))
-
-    t = font_small.render("— или подключиться к другу —", True, (150, 150, 170))
-    screen.blit(t, t.get_rect(center=(WIDTH // 2, 330)))
-
-    label = font_mid.render("IP хоста (Radmin VPN):", True, (220, 220, 240))
-    screen.blit(label, label.get_rect(midright=(WIDTH // 2 - 30, 415)))
-    ip_rect = ed.Rect(WIDTH // 2 - 20, 385, 480, 60)
-    border_col = (255, 215, 0) if net_input_active else (150, 150, 170)
-    ed.draw.rect(screen, (30, 30, 45), ip_rect, border_radius=10)
-    ed.draw.rect(screen, border_col, ip_rect, 3, border_radius=10)
-    txt = net_ip_input if net_ip_input else "26.x.x.x"
-    tcol = (255, 255, 255) if net_ip_input else (100, 100, 120)
-    t = font_mid.render(txt, True, tcol)
-    screen.blit(t, (ip_rect.x + 15, ip_rect.y + 12))
-    if net_input_active and (ed.time.get_ticks() // 500) % 2:
-        cx = ip_rect.x + 15 + t.get_width() + 3
-        ed.draw.line(screen, (255, 255, 255),
-                     (cx, ip_rect.y + 10), (cx, ip_rect.bottom - 10), 2)
-
-    join_btn = ed.Rect(WIDTH // 2 - 20, 465, 480, 70)
-    can_join = bool(net_ip_input.strip()) and not net_connected
-    jcol = (100, 255, 150) if can_join else (100, 100, 120)
-    hover_j = join_btn.collidepoint(mouse_pos) and can_join
-    ed.draw.rect(screen, (50, 80, 55) if hover_j else (35, 45, 40),
-                 join_btn, border_radius=14)
-    ed.draw.rect(screen, jcol, join_btn, 3, border_radius=14)
-    t = font_mid.render("🔌 ПОДКЛЮЧИТЬСЯ", True, jcol)
-    screen.blit(t, t.get_rect(center=join_btn.center))
-
-    if net_status_msg:
-        scol = (100, 255, 150) if net_connected else (255, 200, 100)
-        t = font_small.render(net_status_msg, True, scol)
-        screen.blit(t, t.get_rect(center=(WIDTH // 2, 590)))
-
-    if net_connected:
-        t = font_big.render("✓ СВЯЗЬ УСТАНОВЛЕНА — СТАРТ!", True, (100, 255, 150))
-        screen.blit(t, t.get_rect(center=(WIDTH // 2, 640)))
-
-    hint = font_tiny.render(
-        "ESC — назад   |   ENTER — подключиться   |   клик по полю IP — ввод",
-        True, COLOR_GRAY)
-    screen.blit(hint, hint.get_rect(center=(WIDTH // 2, HEIGHT - 40)))
-
 # ============================================================
 # ОБНОВЛЕНИЕ ОБЩЕЙ ЛОГИКИ
 # ============================================================
@@ -1173,11 +943,6 @@ def update_common(dt):
     global achievement_banner_timer
 
     for p in (p1, p2):
-        if net_is_online:
-            is_local = ((net_my_num == 1 and p is p1) or
-                        (net_my_num == 2 and p is p2))
-            if not is_local:
-                continue
         if p["scale"] < 1.0: p["scale"] = min(1.0, p["scale"] + 0.05)
         if p["score"] > p.get("max_score", 0): p["max_score"] = p["score"]
 
@@ -1223,11 +988,10 @@ def update_common(dt):
                 income = max(1, int(p["power"] * p["mult"] * p["mega_mult"] * 0.5))
                 p["score"] += income
 
-    if not net_is_online:
-        for attacker, victim in ((p1, p2), (p2, p1)):
-            if attacker.get("curse", 0.0) > 0 and victim["score"] > 0:
-                loss = int(victim["score"] * attacker["curse"] * dt)
-                if loss > 0: victim["score"] = max(0, victim["score"] - loss)
+    for attacker, victim in ((p1, p2), (p2, p1)):
+        if attacker.get("curse", 0.0) > 0 and victim["score"] > 0:
+            loss = int(victim["score"] * attacker["curse"] * dt)
+            if loss > 0: victim["score"] = max(0, victim["score"] - loss)
 
     if double_time > 0:     double_time = max(0.0, double_time - dt)
     if mega_click_time > 0: mega_click_time = max(0.0, mega_click_time - dt)
@@ -1249,143 +1013,80 @@ def update_common(dt):
 # ============================================================
 def handle_gameplay_input(event):
     global shop_open_p1, shop_open_p2, confirm_reset, state, running
-    global shop_scroll_p1, shop_scroll_p2, show_achievements, net_is_online
-
-    online = (state == "online")
-    local_is_p1 = (not online) or (net_my_num == 1)
-    local_is_p2 = (not online) or (net_my_num == 2)
+    global shop_scroll_p1, shop_scroll_p2, show_achievements
 
     if event.type == ed.KEYDOWN:
-        if event.key == ed.K_ESCAPE:
-            if online:
-                net_send({"type": "bye"})
-                net_reset()
-                net_is_online = False
-            state = "menu"
-            return
-        if event.key == ed.K_RETURN:
-            if online:
-                net_send({"type": "bye"})
-                net_reset()
-                net_is_online = False
-            running = False
-            return
-        if event.key == ed.K_h:
-            show_achievements = not show_achievements
-            return
-        if event.key == ed.K_DELETE and state == "free":
-            confirm_reset = True
-            return
-
-        # --- управление музыкой ---
-        if event.key == ed.K_m: toggle_pause()
+        if event.key == ed.K_ESCAPE: state = "menu"; return
+        if event.key == ed.K_RETURN: running = False; return
+        if event.key == ed.K_h: show_achievements = not show_achievements; return
+        if event.key == ed.K_DELETE and state == "free": confirm_reset = True; return
+        if event.key == ed.K_SPACE: do_click(p2, button2_rect.center, COLOR_P2)
+        elif event.key == ed.K_b: shop_open_p2 = not shop_open_p2
+        elif event.key == ed.K_z:
+            best_idx, best_cost = -1, float("inf")
+            discount = p2.get("discount", 0.0)
+            for i in range(get_active_count()):
+                if p2["levels"][i] >= MAX_LEVEL: continue
+                c = int(p2["costs"][i] * (1 - discount))
+                if p2["score"] >= c and c < best_cost: best_cost = c; best_idx = i
+            if best_idx >= 0:
+                buy(p2, best_idx)
+                popups.append({"pos": [button2_rect.centerx - 40, button2_rect.centery - 40],
+                               "life": 60, "alpha": 255,
+                               "text": f"🛒 {UPGRADES[best_idx]['name']}!",
+                               "color": COLOR_P2})
+            else:
+                popups.append({"pos": [button2_rect.centerx - 60, button2_rect.centery - 40],
+                               "life": 50, "alpha": 255,
+                               "text": "❌ нет денег", "color": (255, 80, 80)})
+        elif event.key in (ed.K_1, ed.K_2, ed.K_3, ed.K_4, ed.K_5, ed.K_6, ed.K_7, ed.K_8):
+            idx = event.key - ed.K_1
+            if buy(p2, idx):
+                popups.append({"pos": [button2_rect.centerx - 40, button2_rect.centery - 40],
+                               "life": 60, "alpha": 255,
+                               "text": f"🛒 {UPGRADES[idx]['name']}!",
+                               "color": COLOR_P2})
+        elif event.key == ed.K_UP:
+            if shop_open_p2: shop_scroll_p2 = max(0, shop_scroll_p2 - SHOP_ITEM_H)
+            elif shop_open_p1: shop_scroll_p1 = max(0, shop_scroll_p1 - SHOP_ITEM_H)
+        elif event.key == ed.K_DOWN:
+            if shop_open_p2: shop_scroll_p2 = min(get_max_scroll(), shop_scroll_p2 + SHOP_ITEM_H)
+            elif shop_open_p1: shop_scroll_p1 = min(get_max_scroll(), shop_scroll_p1 + SHOP_ITEM_H)
+        # --- Управление музыкой работает и в игре через клавиши ---
+        elif event.key == ed.K_m: toggle_pause()
         elif event.key == ed.K_n: next_track()
         elif event.key == ed.K_p: prev_track()
-        elif event.key in (ed.K_EQUALS, ed.K_PLUS): change_volume(0.05)
+        elif event.key == ed.K_EQUALS or event.key == ed.K_PLUS: change_volume(0.05)
         elif event.key == ed.K_MINUS: change_volume(-0.05)
-
-        # --- управление P2 (клавиши, если локальный игрок = P2) ---
-        if local_is_p2:
-            if event.key == ed.K_SPACE:
-                do_click(p2, button2_rect.center, COLOR_P2)
-            elif event.key == ed.K_b:
-                shop_open_p2 = not shop_open_p2
-            elif event.key == ed.K_z:
-                best_idx, best_cost = -1, float("inf")
-                discount = p2.get("discount", 0.0)
-                for i in range(get_active_count()):
-                    if p2["levels"][i] >= MAX_LEVEL:
-                        continue
-                    c = int(p2["costs"][i] * (1 - discount))
-                    if p2["score"] >= c and c < best_cost:
-                        best_cost = c; best_idx = i
-                if best_idx >= 0:
-                    buy(p2, best_idx)
-                    popups.append({"pos": [button2_rect.centerx - 40,
-                                            button2_rect.centery - 40],
-                                   "life": 60, "alpha": 255,
-                                   "text": f"🛒 {UPGRADES[best_idx]['name']}!",
-                                   "color": COLOR_P2})
-            elif event.key in (ed.K_1, ed.K_2, ed.K_3, ed.K_4,
-                                ed.K_5, ed.K_6, ed.K_7, ed.K_8):
-                idx = event.key - ed.K_1
-                if buy(p2, idx):
-                    popups.append({"pos": [button2_rect.centerx - 40,
-                                            button2_rect.centery - 40],
-                                   "life": 60, "alpha": 255,
-                                   "text": f"🛒 {UPGRADES[idx]['name']}!",
-                                   "color": COLOR_P2})
-
-        # --- управление P1 клавишами (только онлайн, F/G/Q) ---
-        if online and local_is_p1:
-            if event.key == ed.K_f:
-                do_click(p1, button1_rect.center, COLOR_P1)
-            elif event.key == ed.K_g:
-                shop_open_p1 = not shop_open_p1
-            elif event.key == ed.K_q:
-                best_idx, best_cost = -1, float("inf")
-                discount = p1.get("discount", 0.0)
-                for i in range(get_active_count()):
-                    if p1["levels"][i] >= MAX_LEVEL:
-                        continue
-                    c = int(p1["costs"][i] * (1 - discount))
-                    if p1["score"] >= c and c < best_cost:
-                        best_cost = c; best_idx = i
-                if best_idx >= 0:
-                    buy(p1, best_idx)
-                    popups.append({"pos": [button1_rect.centerx - 40,
-                                            button1_rect.centery - 40],
-                                   "life": 60, "alpha": 255,
-                                   "text": f"🛒 {UPGRADES[best_idx]['name']}!",
-                                   "color": COLOR_P1})
-
-        # --- прокрутка магазина ---
-        if event.key == ed.K_UP:
-            if shop_open_p2 and local_is_p2:
-                shop_scroll_p2 = max(0, shop_scroll_p2 - SHOP_ITEM_H)
-            elif shop_open_p1 and local_is_p1:
-                shop_scroll_p1 = max(0, shop_scroll_p1 - SHOP_ITEM_H)
-        elif event.key == ed.K_DOWN:
-            if shop_open_p2 and local_is_p2:
-                shop_scroll_p2 = min(get_max_scroll(),
-                                      shop_scroll_p2 + SHOP_ITEM_H)
-            elif shop_open_p1 and local_is_p1:
-                shop_scroll_p1 = min(get_max_scroll(),
-                                      shop_scroll_p1 + SHOP_ITEM_H)
 
     elif event.type == ed.MOUSEWHEEL:
         mx, my = ed.mouse.get_pos()
-        if shop_open_p1 and local_is_p1 and get_panel_p1_rect().collidepoint(mx, my):
+        if shop_open_p1 and get_panel_p1_rect().collidepoint(mx, my):
             shop_scroll_p1 -= event.y * 40
             shop_scroll_p1 = max(0, min(get_max_scroll(), shop_scroll_p1))
-        elif shop_open_p2 and local_is_p2 and get_panel_p2_rect().collidepoint(mx, my):
+        elif shop_open_p2 and get_panel_p2_rect().collidepoint(mx, my):
             shop_scroll_p2 -= event.y * 40
             shop_scroll_p2 = max(0, min(get_max_scroll(), shop_scroll_p2))
 
     elif event.type == ed.MOUSEBUTTONDOWN and event.button == 1:
         pos = event.pos
-        if SHOP_BTN_P1.collidepoint(pos) and local_is_p1:
-            shop_open_p1 = not shop_open_p1; return
-        if SHOP_BTN_P2.collidepoint(pos) and local_is_p2:
-            shop_open_p2 = not shop_open_p2; return
-        if shop_anim_p1 > 0.5 and local_is_p1 and get_panel_p1_rect().collidepoint(pos):
+        if SHOP_BTN_P1.collidepoint(pos): shop_open_p1 = not shop_open_p1; return
+        if SHOP_BTN_P2.collidepoint(pos): shop_open_p2 = not shop_open_p2; return
+        if shop_anim_p1 > 0.5 and get_panel_p1_rect().collidepoint(pos):
             px = get_panel_p1_rect().x
             for i in range(get_active_count()):
                 r = panel_upgrade_rect(px, i, shop_scroll_p1)
                 if r.collidepoint(pos) and SHOP_VIEW_TOP <= pos[1] <= SHOP_VIEW_BOTTOM:
                     buy(p1, i); return
             return
-        if shop_anim_p2 > 0.5 and local_is_p2 and get_panel_p2_rect().collidepoint(pos):
+        if shop_anim_p2 > 0.5 and get_panel_p2_rect().collidepoint(pos):
             px = get_panel_p2_rect().x
             for i in range(get_active_count()):
                 r = panel_upgrade_rect(px, i, shop_scroll_p2)
                 if r.collidepoint(pos) and SHOP_VIEW_TOP <= pos[1] <= SHOP_VIEW_BOTTOM:
                     buy(p2, i); return
             return
-        if button1_rect.collidepoint(pos) and local_is_p1:
-            do_click(p1, pos, COLOR_P1)
-        elif button2_rect.collidepoint(pos) and local_is_p2:
-            do_click(p2, pos, COLOR_P2)
+        if button1_rect.collidepoint(pos): do_click(p1, pos, COLOR_P1)
 
 # ============================================================
 # ГЛАВНЫЙ ЦИКЛ
@@ -1406,7 +1107,6 @@ while running:
                 elif event.key == ed.K_1: state = "free"
                 elif event.key == ed.K_2: state = "comp_setup"
                 elif event.key == ed.K_3: start_match("race")
-                elif event.key == ed.K_4: state = "online_setup"
                 elif event.key == ed.K_h: show_achievements = not show_achievements
                 elif event.key == ed.K_m: toggle_pause()
                 elif event.key == ed.K_n: next_track()
@@ -1425,34 +1125,6 @@ while running:
                             if btn["state"] == "free": state = "free"
                             elif btn["state"] == "comp_setup": state = "comp_setup"
                             elif btn["state"] == "race": start_match("race")
-                            elif btn["state"] == "online_setup": state = "online_setup"
-
-        elif state == "online_setup":
-            if event.type == ed.KEYDOWN:
-                if event.key == ed.K_ESCAPE:
-                    net_reset()
-                    state = "menu"
-                elif event.key == ed.K_RETURN:
-                    if net_ip_input.strip() and not net_connected:
-                        net_join(net_ip_input.strip())
-                elif event.key == ed.K_BACKSPACE:
-                    net_ip_input = net_ip_input[:-1]
-                elif event.unicode and event.unicode.isprintable() and len(net_ip_input) < 20:
-                    net_ip_input += event.unicode
-                    net_input_active = True
-            elif event.type == ed.MOUSEBUTTONDOWN and event.button == 1:
-                host_btn = ed.Rect(WIDTH // 2 - 400, 200, 800, 90)
-                ip_rect  = ed.Rect(WIDTH // 2 - 20, 385, 480, 60)
-                join_btn = ed.Rect(WIDTH // 2 - 20, 465, 480, 70)
-                if host_btn.collidepoint(event.pos):
-                    net_host(NET_PORT_DEFAULT)
-                    net_input_active = False
-                elif ip_rect.collidepoint(event.pos):
-                    net_input_active = True
-                elif join_btn.collidepoint(event.pos) and net_ip_input.strip():
-                    net_join(net_ip_input.strip())
-                else:
-                    net_input_active = False
 
         elif state == "comp_setup":
             if event.type == ed.KEYDOWN:
@@ -1471,7 +1143,7 @@ while running:
                         if r.collidepoint(event.pos):
                             comp_target = amount; start_match("comp"); break
 
-        elif state in ("free", "comp", "race", "online"):
+        elif state in ("free", "comp", "race"):
             if show_achievements:
                 if event.type == ed.KEYDOWN and event.key in (ed.K_h, ed.K_ESCAPE):
                     show_achievements = False
@@ -1496,16 +1168,7 @@ while running:
                 if replay_rect.collidepoint(event.pos): start_match(prev_state)
                 elif menu_rect.collidepoint(event.pos): state = "menu"
 
-    # --- Логика ---
-    # Автостарт онлайна, когда связь установилась
-    if state == "online_setup" and net_connected:
-        start_match("online")
-        net_is_online = True
-
-    if state in ("free", "comp", "race", "online") and not confirm_reset and not show_achievements:
-        if state == "online":
-            net_pump()
-            net_send_local_state()
+    if state in ("free", "comp", "race") and not confirm_reset and not show_achievements:
         update_common(dt)
         if state == "free":
             event_timer -= dt
@@ -1532,40 +1195,36 @@ while running:
 
     screen.fill(COLOR_BG)
 
-    # --- Отрисовка ---
     if state == "menu":
         title = font_huge.render("КЛИКЕР", True, COLOR_GOLD)
-        screen.blit(title, title.get_rect(center=(WIDTH // 2, 80)))
+        screen.blit(title, title.get_rect(center=(WIDTH // 2, 90)))
         sub = font_mid.render("Выбери режим игры", True, (200, 200, 220))
-        screen.blit(sub, sub.get_rect(center=(WIDTH // 2, 150)))
+        screen.blit(sub, sub.get_rect(center=(WIDTH // 2, 160)))
         for i, btn in enumerate(MENU_BUTTONS):
             hover = btn["rect"].collidepoint(mouse_pos)
             bg = (55, 55, 85) if hover else (40, 40, 60)
             ed.draw.rect(screen, bg, btn["rect"], border_radius=20)
             ed.draw.rect(screen, btn["color"], btn["rect"], 4, border_radius=20)
             num = font_big.render(f"{i+1}", True, btn["color"])
-            screen.blit(num, (btn["rect"].x + 35, btn["rect"].y + 25))
+            screen.blit(num, (btn["rect"].x + 35, btn["rect"].y + 30))
             label = font_big.render(btn["label"], True, btn["color"])
-            screen.blit(label, (btn["rect"].x + 120, btn["rect"].y + 6))
+            screen.blit(label, (btn["rect"].x + 120, btn["rect"].y + 10))
             s = font_small.render(btn["sub"], True, (200, 200, 220))
-            screen.blit(s, (btn["rect"].x + 120, btn["rect"].y + 62))
+            screen.blit(s, (btn["rect"].x + 120, btn["rect"].y + 65))
         ach_t = font_small.render(
             f"🏆 Достижения: {len(unlocked_achievements)} / {TOTAL_ACH}", True, COLOR_GOLD)
-        screen.blit(ach_t, ach_t.get_rect(center=(WIDTH // 2, HEIGHT - 175)))
-        ach_btn = ed.Rect(WIDTH // 2 - 150, HEIGHT - 145, 300, 40)
+        screen.blit(ach_t, ach_t.get_rect(center=(WIDTH // 2, HEIGHT - 165)))
+        ach_btn = ed.Rect(WIDTH // 2 - 150, HEIGHT - 135, 300, 40)
         ed.draw.rect(screen, (40, 40, 60), ach_btn, border_radius=10)
         ed.draw.rect(screen, COLOR_GOLD, ach_btn, 2, border_radius=10)
         ab = font_small.render("Посмотреть достижения (H)", True, COLOR_GOLD)
         screen.blit(ab, ab.get_rect(center=ach_btn.center))
         hint = font_tiny.render(
-            "1 / 2 / 3 / 4 — быстрый выбор режима   |   ENTER — выход   |   H — достижения",
+            "1 / 2 / 3 — быстрый выбор режима   |   ENTER — выход   |   H — достижения",
             True, COLOR_GRAY)
         screen.blit(hint, hint.get_rect(center=(WIDTH // 2, HEIGHT - 70)))
-        draw_music_panel()
+        draw_music_panel()          # <-- музыка видна только в меню
         if show_achievements: draw_achievements_panel()
-
-    elif state == "online_setup":
-        draw_online_setup()
 
     elif state == "comp_setup":
         title = font_huge.render("СОРЕВНОВАНИЕ", True, COLOR_GOLD)
@@ -1585,23 +1244,11 @@ while running:
         hint = font_tiny.render("Клик по кнопке — старт   |   ESC / ENTER — назад",
                                 True, COLOR_GRAY)
         screen.blit(hint, hint.get_rect(center=(WIDTH // 2, HEIGHT - 60)))
-        draw_music_panel()
+        draw_music_panel()          # <-- музыка видна и здесь
 
-    elif state in ("free", "comp", "race", "online"):
+    elif state in ("free", "comp", "race"):
         ed.draw.line(screen, (60, 60, 90), (WIDTH // 2, 0), (WIDTH // 2, HEIGHT), 2)
-
-        if state == "online":
-            local_num = net_my_num
-            t = font_mid.render(
-                f"🌐 СЕТЕВАЯ ИГРА — ВЫ Игрок {local_num}  "
-                f"({'хост' if local_num == 1 else 'клиент'})",
-                True, COLOR_NET)
-            screen.blit(t, t.get_rect(center=(WIDTH // 2, 25)))
-            if not net_connected:
-                warn = font_small.render("⚠ Противник отключился (ESC — в меню)",
-                                         True, (255, 100, 100))
-                screen.blit(warn, warn.get_rect(center=(WIDTH // 2, 55)))
-        elif state == "free":
+        if state == "free":
             bar_w, bar_h = 500, 22
             bx = WIDTH // 2 - bar_w // 2; by = 25
             ed.draw.rect(screen, (60, 60, 90), (bx, by, bar_w, bar_h), border_radius=10)
@@ -1634,7 +1281,6 @@ while running:
             screen.blit(lt, (bx + 15, by + 8))
             rt = font_small.render(f"Игрок 2: {p2['score']}", True, (255, 255, 255))
             screen.blit(rt, (bx + bw - rt.get_width() - 15, by + 8))
-
         draw_effects()
         draw_player_column(PLAYER1_X, p1, COLOR_P1, SHOP_BTN_P1, shop_open_p1)
         draw_player_column(PLAYER2_X, p2, COLOR_P2, SHOP_BTN_P2, shop_open_p2)
@@ -1648,13 +1294,11 @@ while running:
         if state == "free": draw_event_message()
         ach_t = font_small.render(f"🏆 {len(unlocked_achievements)} / {TOTAL_ACH}", True, COLOR_GOLD)
         screen.blit(ach_t, (20, 20))
+        # <-- ПАНЕЛЬ МУЗЫКИ ЗДЕСЬ НЕ РИСУЕТСЯ! -->
         bottom = "ENTER — выход  |  ESC — в меню  |  H — достижения  |  M/N/P — музыка"
         if state == "free":
             bottom = ("ENTER — выход  |  ESC — в меню  |  H — достижения  "
                       "|  DELETE — стереть  |  M/N/P — музыка")
-        elif state == "online":
-            bottom = ("F — клик (хост)  |  G — магазин  |  Q — дешёвое  |  "
-                      "ПРОБЕЛ/B/Z — для клиента  |  ESC — в меню")
         t = font_mini.render(bottom, True, COLOR_GRAY)
         screen.blit(t, t.get_rect(center=(WIDTH // 2, HEIGHT - 25)))
         if confirm_reset: draw_confirm_reset()
@@ -1687,7 +1331,6 @@ while running:
                                 True, COLOR_GRAY)
         screen.blit(hint, hint.get_rect(center=(WIDTH // 2, HEIGHT - 90)))
 
-    # --- Курсор ---
     hovering = False
     if state == "menu":
         for b in MENU_BUTTONS:
@@ -1696,12 +1339,7 @@ while running:
            MUSIC_BTN_NEXT.collidepoint(mouse_pos) or MUSIC_BTN_VOL_UP.collidepoint(mouse_pos) or \
            MUSIC_BTN_VOL_DOWN.collidepoint(mouse_pos):
             hovering = True
-        if ed.Rect(WIDTH // 2 - 150, HEIGHT - 145, 300, 40).collidepoint(mouse_pos):
-            hovering = True
-    elif state == "online_setup":
-        if ed.Rect(WIDTH // 2 - 400, 200, 800, 90).collidepoint(mouse_pos) or \
-           ed.Rect(WIDTH // 2 - 20, 385, 480, 60).collidepoint(mouse_pos) or \
-           ed.Rect(WIDTH // 2 - 20, 465, 480, 70).collidepoint(mouse_pos):
+        if ed.Rect(WIDTH // 2 - 150, HEIGHT - 135, 300, 40).collidepoint(mouse_pos):
             hovering = True
     elif state == "comp_setup":
         for r, _ in COMP_PRESET_RECTS:
@@ -1714,7 +1352,7 @@ while running:
         if ed.Rect(WIDTH // 2 - 400, HEIGHT - 220, 380, 90).collidepoint(mouse_pos) or \
            ed.Rect(WIDTH // 2 + 20,  HEIGHT - 220, 380, 90).collidepoint(mouse_pos):
             hovering = True
-    elif state in ("free", "comp", "race", "online") and not confirm_reset and not show_achievements:
+    elif state in ("free", "comp", "race") and not confirm_reset and not show_achievements:
         if SHOP_BTN_P1.collidepoint(mouse_pos) or SHOP_BTN_P2.collidepoint(mouse_pos) or \
            button1_rect.collidepoint(mouse_pos):
             hovering = True
@@ -1735,13 +1373,6 @@ while running:
     ed.mouse.set_cursor(ed.SYSTEM_CURSOR_HAND if hovering else ed.SYSTEM_CURSOR_ARROW)
     ed.display.flip()
 
-# --- Выход ---
-try:
-    if net_connected:
-        net_send({"type": "bye"})
-except Exception:
-    pass
-net_reset()
 save_game()
 ed.quit()
 sys.exit()
